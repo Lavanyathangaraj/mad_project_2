@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart'; 
-import 'property_listings_screen.dart'; // Target screen for successful login/signup
+import 'property_listings_screen.dart'; 
 
 class LoginSignupScreen extends StatefulWidget {
   const LoginSignupScreen({super.key});
@@ -22,15 +22,14 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
   bool isLogin = true;
   String errorMessage = '';
   bool _isLoading = false;
-  
-  // State for Role Selection (defaults to Buyer)
   UserRole _selectedRole = UserRole.Buyer; 
 
   void toggleForm() {
     setState(() {
       isLogin = !isLogin;
       errorMessage = '';
-      _nameController.clear(); // Clear name field when toggling
+      _nameController.clear(); 
+      _passwordController.clear(); // Clear password when toggling
     });
   }
 
@@ -39,7 +38,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
     final password = _passwordController.text.trim();
     final name = _nameController.text.trim();
 
-    // Basic Validation
     if (email.isEmpty || password.isEmpty || (!isLogin && name.isEmpty)) {
       setState(() {
         errorMessage = "Please fill all required fields.";
@@ -51,29 +49,40 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
 
     try {
       User? user;
+      
       if (isLogin) {
-        // Use the sign-in function from AuthService
+        // --- LOGIN: Navigate on success ---
         user = await _authService.signIn(email: email, password: password);
+        
+        if (user != null && mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const PropertyListingsScreen()),
+          );
+        }
       } else {
-        // Use the sign-up function from AuthService
+        // --- SIGN UP: Show message and switch to Login view ---
         user = await _authService.signUp(
           name: name,
           email: email,
           password: password,
-          role: _selectedRole, // Pass the selected role
+          role: _selectedRole, 
         );
-      }
-
-      // Check for successful authentication
-      if (user != null && mounted) {
-        // Navigate to the main listing screen upon success
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const PropertyListingsScreen()),
-        );
+        
+        if (user != null && mounted) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sign Up Successful! Please log in now.')),
+          );
+          // Switch form back to Login view
+          setState(() {
+            isLogin = true;
+            _nameController.clear();
+            _passwordController.clear(); // Clear password after successful signup
+          });
+        }
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        // Display user-friendly error messages from Firebase
         errorMessage = e.message ?? "An authentication error occurred."; 
       });
     } catch (e) {
@@ -93,7 +102,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
     super.dispose();
   }
   
-  // Custom Input Decoration for cleaner UI
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -126,7 +134,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
               ),
               const SizedBox(height: 30),
               
-              // Name Field (Sign Up Only)
               if (!isLogin)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 15),
@@ -136,7 +143,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                   ),
                 ),
                 
-              // Role Selection (Sign Up Only)
               if (!isLogin)
                 Column(
                   children: [
@@ -164,7 +170,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                   ],
                 ),
 
-              // Email & Password Fields
               Padding(
                 padding: const EdgeInsets.only(bottom: 15),
                 child: TextField(
@@ -180,7 +185,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
               ),
               const SizedBox(height: 30),
               
-              // Submit Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -201,7 +205,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
               ),
               const SizedBox(height: 10),
               
-              // Toggle Button
               TextButton(
                 onPressed: toggleForm,
                 child: Text(isLogin
@@ -209,7 +212,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                     : "Already have an account? Login"),
               ),
               
-              // Error Message
               if (errorMessage.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 20),
