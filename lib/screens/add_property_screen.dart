@@ -3,20 +3,19 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb; // Needed for platform check
+import 'package:flutter/foundation.dart' show kIsWeb; 
 import 'package:flutter/material.dart';
-// NOTE: These are imported to allow the methods to compile, assuming you have the packages
 import 'package:image_picker/image_picker.dart'; 
 import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http; 
+import '../models/property_model.dart';
 
-// --- Cloudinary Config (Copied from reference file) ---
+// --- Cloudinary Config ---
 const String CLOUDINARY_CLOUD_NAME = 'dvdfvxphf';
 const String CLOUDINARY_UPLOAD_PRESET = 'flutter_upload';
 final String CLOUDINARY_URL =
     'https://api.cloudinary.com/v1_1/$CLOUDINARY_CLOUD_NAME/image/upload';
-// ----------------------------------------------------
 
 class AddPropertyScreen extends StatefulWidget {
   const AddPropertyScreen({super.key});
@@ -35,12 +34,9 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   
   String? _selectedType = 'Apartment'; 
 
-  // --- Image Upload State (Single Image Logic from reference) ---
   File? _imageFile;
   Uint8List? _webImage;
   bool _isLoading = false;
-  // Removed location logic/state variables
-  // -----------------------------------------------------------
 
   final List<String> _propertyTypes = [
     'Apartment', 
@@ -50,7 +46,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     'Commercial'
   ];
 
-  // --- Image Picker (Copied from reference file) ---
   Future<void> _pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -63,9 +58,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     }
   }
 
-  // --- Cloudinary Upload (Copied from reference file) ---
   Future<String?> _uploadImageToCloudinary() async {
-    // Check if an image is selected before proceeding
     if (_imageFile == null && _webImage == null) return null;
     
     try {
@@ -93,7 +86,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         final data = jsonDecode(response.body);
         return data['secure_url'];
       } else {
-        // Log the error for debugging
         print('Cloudinary Error: ${response.statusCode} - ${response.body}'); 
         return null;
       }
@@ -103,7 +95,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     }
   }
 
-  // --- Submission Logic (Modified to use Cloudinary and Firestore) ---
   void _submitProperty() async {
     if (_imageFile == null && _webImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,36 +108,35 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Upload Image
       final imageUrl = await _uploadImageToCloudinary();
       if (imageUrl == null) {
         throw Exception('Failed to upload image to Cloudinary.');
       }
 
-      // 2. Prepare Data
-      final propertyData = {
-        'title': _titleController.text.trim(),
-        'address': _addressController.text.trim(),
-        'price': int.tryParse(_priceController.text.trim()) ?? 0, 
-        'description': _descriptionController.text.trim(),
-        'type': _selectedType,
-        'imageUrl': imageUrl, // Store the single image URL
-        'sellerId': FirebaseAuth.instance.currentUser?.uid ?? '',
-        'timestamp': FieldValue.serverTimestamp(),
-      };
-
-      // 3. Save to Firestore (Using 'listings' collection)
-      await FirebaseFirestore.instance.collection('listings').add(propertyData);
-
-      // 4. Success feedback and navigation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Property Listing created successfully!'),
-          backgroundColor: Colors.green,
-        ),
+      final newProperty = PropertyModel(
+        id: '', 
+        title: _titleController.text.trim(),
+        address: _addressController.text.trim(),
+        type: _selectedType!,
+        price: int.tryParse(_priceController.text.trim()) ?? 0, 
+        description: _descriptionController.text.trim(),
+        imageUrl: imageUrl, 
+        sellerId: FirebaseAuth.instance.currentUser?.uid ?? '',
+        timestamp: Timestamp.now(), 
       );
-      
-      Navigator.of(context).pop();
+
+      await FirebaseFirestore.instance.collection('listings').add(newProperty.toMap());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${newProperty.title} listed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        Navigator.of(context).pop();
+      }
 
     } catch (e) {
       if (mounted) {
@@ -170,7 +160,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     super.dispose();
   }
 
-  // --- UI Build Method (Replaced Image Section with Single Image UI) ---
   @override
   Widget build(BuildContext context) {
     const inputDecoration = InputDecoration(
@@ -197,7 +186,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- 1. Property Title ---
               TextFormField(
                 controller: _titleController,
                 decoration: inputDecoration.copyWith(labelText: 'Listing Title', prefixIcon: const Icon(Icons.title)),
@@ -205,7 +193,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               ),
               const SizedBox(height: 20),
 
-              // --- 2. Property Type Dropdown ---
               DropdownButtonFormField<String>(
                 decoration: inputDecoration.copyWith(labelText: 'Property Type', prefixIcon: const Icon(Icons.category)),
                 value: _selectedType,
@@ -224,7 +211,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               ),
               const SizedBox(height: 20),
 
-              // --- 3. Address ---
               TextFormField(
                 controller: _addressController,
                 decoration: inputDecoration.copyWith(labelText: 'Full Address', prefixIcon: const Icon(Icons.location_on_outlined)),
@@ -232,7 +218,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               ),
               const SizedBox(height: 20),
 
-              // --- 4. Price ---
               TextFormField(
                 controller: _priceController,
                 decoration: inputDecoration.copyWith(labelText: 'Price', prefixIcon: const Icon(Icons.monetization_on), hintText: 'e.g., 5000'),
@@ -245,7 +230,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               ),
               const SizedBox(height: 20),
 
-              // --- 5. Description ---
               TextFormField(
                 controller: _descriptionController,
                 decoration: inputDecoration.copyWith(labelText: 'Description', prefixIcon: const Icon(Icons.description)),
@@ -257,7 +241,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               const Divider(color: Colors.black12),
               const SizedBox(height: 20),
 
-              // --- 6. Image Upload UI (From reference file) ---
               Text('Property Image', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
               const SizedBox(height: 15),
               Center(
@@ -298,7 +281,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
               const SizedBox(height: 40),
               
-              // --- Submit Button ---
               ElevatedButton(
                 onPressed: _isLoading ? null : _submitProperty,
                 style: ElevatedButton.styleFrom(
