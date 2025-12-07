@@ -2,10 +2,9 @@
 
 import 'package:flutter/material.dart';
 
-// Import only the required screen
-import 'profile_screen.dart'; // Profile Screen
-
-// Removed imports for: add_item_screen.dart, notifications_screen.dart, filter_search_screen.dart
+// Import the required screens
+import 'profile_screen.dart'; 
+import 'add_property_screen.dart'; // Import the new screen
 
 class PropertyListingsScreen extends StatelessWidget {
   const PropertyListingsScreen({super.key});
@@ -23,7 +22,17 @@ class PropertyListingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Property Pulse'),
         actions: [
-          // 1. Profile Button <--- ONLY KEEP THIS ONE
+          // 1. Add Property Button (Moved from FAB to AppBar) <-- NEW
+          IconButton(
+            icon: const Icon(Icons.add_home_work),
+            tooltip: 'Add New Property',
+            onPressed: () => _navigateToScreen(
+              context, 
+              const AddPropertyScreen(), 
+            ),
+          ),
+          
+          // 2. Profile Button (Existing)
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => _navigateToScreen(
@@ -41,8 +50,8 @@ class PropertyListingsScreen extends StatelessWidget {
         ),
       ),
       
-      // Removed Floating Action Button (FAB) for Add Property/Item
-      // It can be added back when 'add_item_screen.dart' is ready.
+      // REMOVED: The floatingActionButton property is now removed
+      // floatingActionButton: ... (Removed)
     );
   }
 }
