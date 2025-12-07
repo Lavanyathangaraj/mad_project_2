@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart'; 
 import 'add_property_screen.dart';
 import 'filter_search_screen.dart'; 
+import 'property_details_screen.dart'; // Import the new screen
 import '../models/property_model.dart'; // Import the model
 
 class PropertyListingsScreen extends StatefulWidget {
@@ -19,9 +20,11 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
   
   final _firestore = FirebaseFirestore.instance;
 
+  // --- FILTER STATE ---
   String _selectedType = 'All';
   int _minPrice = 0;
   int _maxPrice = 9999999; 
+  // --------------------
 
   void _navigateToScreen(BuildContext context, Widget screen) {
     Navigator.of(context).push(
@@ -29,6 +32,7 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
     );
   }
 
+  // Receives filters from FilterSearchScreen
   void _applyFilters(String type, int minPrice, int maxPrice) {
     setState(() {
       _selectedType = type;
@@ -50,21 +54,26 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
     );
   }
 
+  // --- Dynamic Firestore Query ---
   Stream<QuerySnapshot> _getPropertyStream() {
     Query query = _firestore.collection('listings');
 
+    // 1. Filter by Property Type
     if (_selectedType != 'All') {
       query = query.where('type', isEqualTo: _selectedType);
     }
     
+    // 2. Filter by Minimum Price
     if (_minPrice > 0) {
       query = query.where('price', isGreaterThanOrEqualTo: _minPrice);
     }
 
+    // 3. Filter by Maximum Price 
     if (_maxPrice < 9999999) {
       query = query.where('price', isLessThanOrEqualTo: _maxPrice);
     }
 
+    // 4. Order by Timestamp (Requires Firestore Index)
     query = query.orderBy('timestamp', descending: true);
     
     return query.snapshots();
@@ -76,12 +85,14 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
       appBar: AppBar(
         title: const Text('Property Pulse'),
         actions: [
+          // 1. Filter/Search Button
           IconButton(
             icon: const Icon(Icons.filter_list),
             tooltip: 'Filter Listings',
             onPressed: _navigateToFilterScreen,
           ),
           
+          // 2. Add Property Button
           IconButton(
             icon: const Icon(Icons.add_home_work),
             tooltip: 'Add New Property',
@@ -91,6 +102,7 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
             ),
           ),
           
+          // 3. Profile Button
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => _navigateToScreen(
@@ -110,8 +122,7 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
           }
 
           if (snapshot.hasError) {
-            // Note: Error here is likely a missing Firestore Index
-            return Center(child: Text('Error loading listings. Check your Firestore Indexes. Error: ${snapshot.error}'));
+            return Center(child: Text('Error loading listings: ${snapshot.error}'));
           }
 
           final propertyDocs = snapshot.data?.docs ?? [];
@@ -129,6 +140,7 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 10),
+                    // Show Reset button if filters are active
                     if (_selectedType != 'All' || _minPrice > 0 || _maxPrice < 9999999)
                       TextButton(
                         onPressed: () => _applyFilters('All', 0, 9999999),
@@ -140,10 +152,12 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
             );
           }
 
+          // --- Data Display State ---
           return ListView.builder(
             itemCount: propertyDocs.length,
             itemBuilder: (context, index) {
-              // Retrieve property data using the new model
+              
+              // Retrieve property data safely using the model
               final property = PropertyModel.fromDocument(propertyDocs[index]); 
               
               final title = property.title;
@@ -212,9 +226,13 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
                     ],
                   ),
                   
+                  // --- Navigation to Details Screen ---
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Viewing details for: $title')),
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(
+                        builder: (context) => PropertyDetailsScreen(property: property),
+                      ),
                     );
                   },
                 ),
