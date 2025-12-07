@@ -1,9 +1,12 @@
+// lib/screens/property_listings_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart'; 
 import 'add_property_screen.dart';
 import 'filter_search_screen.dart'; 
+import '../models/property_model.dart'; // Import the model
 
 class PropertyListingsScreen extends StatefulWidget {
   const PropertyListingsScreen({super.key});
@@ -107,7 +110,8 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            // Note: Error here is likely a missing Firestore Index
+            return Center(child: Text('Error loading listings. Check your Firestore Indexes. Error: ${snapshot.error}'));
           }
 
           final propertyDocs = snapshot.data?.docs ?? [];
@@ -139,12 +143,13 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
           return ListView.builder(
             itemCount: propertyDocs.length,
             itemBuilder: (context, index) {
-              final property = propertyDocs[index].data() as Map<String, dynamic>;
+              // Retrieve property data using the new model
+              final property = PropertyModel.fromDocument(propertyDocs[index]); 
               
-              final title = property['title'] ?? 'N/A';
-              final price = property['price']?.toString() ?? 'N/A';
-              final address = property['address'] ?? 'N/A';
-              final imageUrl = property['imageUrl'] ?? '';
+              final title = property.title;
+              final price = property.price.toString();
+              final address = property.address;
+              final imageUrl = property.imageUrl ?? '';
               
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
@@ -185,7 +190,7 @@ class _PropertyListingsScreenState extends State<PropertyListingsScreen> {
                       Text(address, style: const TextStyle(color: Colors.grey)),
                       const SizedBox(height: 4),
                       Text(
-                        'Type: ${property['type'] ?? 'N/A'}',
+                        'Type: ${property.type}',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
