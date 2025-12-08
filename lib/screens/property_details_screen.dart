@@ -1,8 +1,8 @@
 // lib/screens/property_details_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Added for Firestore access
-import 'package:firebase_auth/firebase_auth.dart'; // Added for user ID
+import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:firebase_auth/firebase_auth.dart'; 
 import '../models/property_model.dart';
 
 class PropertyDetailsScreen extends StatefulWidget {
@@ -61,13 +61,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
         .doc(widget.property.id);
 
     if (_isWishlisted) {
-      // Remove from wishlist
       await docRef.delete();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${widget.property.title} removed from wishlist.')),
       );
     } else {
-      // Add to wishlist (store the property ID)
       await docRef.set({
         'addedAt': FieldValue.serverTimestamp(),
       });
@@ -76,7 +74,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
       );
     }
 
-    _checkWishlistStatus(); // Refresh the icon state
+    _checkWishlistStatus(); 
   }
 
   @override
@@ -84,24 +82,17 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.property.title),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isWishlisted ? Icons.favorite : Icons.favorite_border,
-              color: _isWishlisted ? Colors.red : Colors.black,
-            ),
-            onPressed: _toggleWishlist,
-          ),
+        elevation: 4, 
+        actions: const [
+          
         ],
       ),
-      extendBodyBehindAppBar: true, 
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- REMOVED Title ABOVE Image block ---
+            
             // --- 1. Property Image (Header) ---
             SizedBox(
               height: 300,
@@ -124,7 +115,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- 2. Price and Title ---
+                  // --- 2. Price and Title (RESTORED Title here) ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -179,6 +170,38 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
 
                   const SizedBox(height: 30),
                   
+                  // --- Wishlist Button ---
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _toggleWishlist,
+                      icon: Icon(
+                        _isWishlisted ? Icons.favorite : Icons.favorite_border,
+                        color: _isWishlisted ? Colors.red : Theme.of(context).primaryColor,
+                      ),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        child: Text(
+                          _isWishlisted ? 'REMOVE FROM WISHLIST' : 'ADD TO WISHLIST',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: _isWishlisted ? Colors.red : Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        side: BorderSide(
+                          color: _isWishlisted ? Colors.red : Theme.of(context).primaryColor, 
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
                   // --- 5. Seller/Contact Info ---
                   Text(
                     'Contact Information',
@@ -203,26 +226,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   const SizedBox(height: 50),
                   
                   // --- Action Button (Buy/Message) ---
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Initiating purchase for ${widget.property.title}')),
-                        );
-                      },
-                      icon: const Icon(Icons.attach_money),
-                      label: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12.0),
-                        child: Text('Buy for \$${widget.property.price}', style: const TextStyle(fontSize: 18)),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepOrange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
+                  // (Commented out)
                 ],
               ),
             ),
