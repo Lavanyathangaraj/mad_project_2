@@ -21,11 +21,38 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
   final _firestore = FirebaseFirestore.instance;
   final _userId = FirebaseAuth.instance.currentUser?.uid;
   bool _isWishlisted = false;
+  String _sellerName = 'Loading seller info...';
 
   @override
   void initState() {
     super.initState();
     _checkWishlistStatus();
+    _fetchSellerInfo();
+  }
+
+  Future<void> _fetchSellerInfo() async {
+    try {
+      final sellerDoc = await _firestore
+          .collection('users')
+          .doc(widget.property.sellerId)
+          .get();
+      
+      if (sellerDoc.exists && mounted) {
+        setState(() {
+          _sellerName = sellerDoc.data()?['name'] ?? 'Seller Not Found';
+        });
+      } else if (mounted) {
+        setState(() {
+          _sellerName = 'Seller Not Found';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _sellerName = 'Error loading seller';
+        });
+      }
+    }
   }
 
   Future<void> _checkWishlistStatus() async {
@@ -91,9 +118,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- REMOVED Title ABOVE Image block ---
             
-            // --- 1. Property Image (Header) ---
             SizedBox(
               height: 300,
               width: double.infinity,
@@ -115,7 +140,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- 2. Price and Title (RESTORED Title here) ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -138,7 +162,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // --- 3. Location and Type ---
                   Row(
                     children: [
                       const Icon(Icons.location_on, size: 18, color: Colors.grey),
@@ -157,7 +180,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
 
                   const SizedBox(height: 25),
                   
-                  // --- 4. Description ---
                   Text(
                     'Description',
                     style: Theme.of(context).textTheme.titleLarge,
@@ -170,7 +192,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
 
                   const SizedBox(height: 30),
                   
-                  // --- Wishlist Button ---
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -202,7 +223,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
 
                   const SizedBox(height: 30),
 
-                  // --- 5. Seller/Contact Info ---
                   Text(
                     'Contact Information',
                     style: Theme.of(context).textTheme.titleLarge,
@@ -210,8 +230,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   const Divider(),
                   ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.person)),
-                    title: const Text('Seller ID: (Name Loading...)'),
-                    subtitle: Text('Listing ID: ${widget.property.id}'), 
+                    title: Text(_sellerName),
+                    subtitle: Text('Listing ID: ${widget.property.id}'),
 
                     trailing: IconButton(
                       icon: const Icon(Icons.chat),
@@ -225,8 +245,26 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   
                   const SizedBox(height: 50),
                   
-                  // --- Action Button (Buy/Message) ---
-                  // (Commented out)
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: ElevatedButton.icon(
+                  //     onPressed: () {
+                  //       ScaffoldMessenger.of(context).showSnackBar(
+                  //         SnackBar(content: Text('Initiating purchase for ${widget.property.title}')),
+                  //       );
+                  //     },
+                  //     icon: const Icon(Icons.attach_money),
+                  //     label: Padding(
+                  //       padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  //       child: Text('Buy for \$${widget.property.price}', style: const TextStyle(fontSize: 18)),
+                  //     ),
+                  //     style: ElevatedButton.styleFrom(
+                  //       backgroundColor: Colors.deepOrange,
+                  //       foregroundColor: Colors.white,
+                  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
